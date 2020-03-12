@@ -35,6 +35,16 @@ namespace AWS.Logger.Log4net
         }
 
         /// <summary>
+        /// Determines whether or not to create a new Log Group, if the one specified by <see cref="LogGroup"/> doesn't already exist
+        /// <seealso cref="AWSLoggerConfig.DisableLogGroupCreation"/>
+        /// </summary>
+        public bool DisableLogGroupCreation
+        {
+            get { return _config.DisableLogGroupCreation; }
+            set { _config.DisableLogGroupCreation = value; }
+        }
+
+        /// <summary>
         /// Gets and sets the Profile property. The profile is used to look up AWS credentials in the profile store.
         /// <para>
         /// For understanding how credentials are determine view the top level documentation for AWSLoggerConfig class.
@@ -83,6 +93,17 @@ namespace AWS.Logger.Log4net
         {
             get { return _config.Region; }
             set { _config.Region = value; }
+        }
+
+
+        /// <summary>
+        /// Gets and sets of the ServiceURL property. This is an optional property; change
+        /// it only if you want to try a different service endpoint. Ex. for LocalStack
+        /// </summary>
+        public string ServiceUrl
+        {
+            get { return _config.ServiceUrl; }
+            set { _config.ServiceUrl = value; }
         }
 
 
@@ -154,6 +175,18 @@ namespace AWS.Logger.Log4net
         }
 
         /// <summary>
+        /// Gets and sets the LibraryLogErrors property. This is the boolean value of whether or not you would like this library to log logging errors.
+        /// <para>
+        /// The default is "true".
+        /// </para>
+        /// </summary>
+        public bool LibraryLogErrors
+        {
+            get { return _config.LibraryLogErrors; }
+            set { _config.LibraryLogErrors = value; }
+        }
+        
+        /// <summary>
         /// Gets and sets the LibraryLogFileName property. This is the name of the file into which errors from the AWS.Logger.Core library will be wriiten into.
         /// <para>
         /// The default is going to "aws-logger-errors.txt".
@@ -178,7 +211,9 @@ namespace AWS.Logger.Log4net
 
             var config = new AWSLoggerConfig(this.LogGroup)
             {
+                DisableLogGroupCreation = DisableLogGroupCreation,
                 Region = Region,
+                ServiceUrl = ServiceUrl,
                 Credentials = Credentials,
                 Profile = Profile,
                 ProfilesLocation = ProfilesLocation,
@@ -187,6 +222,7 @@ namespace AWS.Logger.Log4net
                 MaxQueuedMessages = MaxQueuedMessages,
 				LogStreamNameSuffix = LogStreamNameSuffix,
                 LogStreamNamePrefix = LogStreamNamePrefix,
+                LibraryLogErrors = LibraryLogErrors,
 				LibraryLogFileName = LibraryLogFileName
             };
             _core = new AWSLoggerCore(config, "Log4net");
@@ -204,6 +240,13 @@ namespace AWS.Logger.Log4net
                 return;
 
             _core.AddMessage(RenderLoggingEvent(loggingEvent));
+        }
+
+        /// <inheritdoc />
+        public override bool Flush(int millisecondsTimeout)
+        {
+            _core?.Flush();
+            return base.Flush(millisecondsTimeout);
         }
     }
 }

@@ -79,16 +79,27 @@ namespace AWS.Logger.Core
             _config = config;
             _logType = logType;
 
-            var credentials = DetermineCredentials(config);
-
-            if (_config.Region != null)
+            var awsConfig = new AmazonCloudWatchLogsConfig();
+            if (!string.IsNullOrWhiteSpace(_config.ServiceUrl))
             {
-                _client = new AmazonCloudWatchLogsClient(credentials, Amazon.RegionEndpoint.GetBySystemName(_config.Region));
+                var serviceUrl = _config.ServiceUrl.Trim();
+                awsConfig.ServiceURL = serviceUrl;
+                if (serviceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                {
+                    awsConfig.UseHttp = true;
+                }
             }
             else
             {
-                _client = new AmazonCloudWatchLogsClient(credentials);
+                if (!string.IsNullOrEmpty(_config.Region))
+                {
+                    awsConfig.RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(_config.Region);
+                }
             }
+
+            var credentials = DetermineCredentials(config);
+            _client = new AmazonCloudWatchLogsClient(credentials, awsConfig);
+
 
             ((AmazonCloudWatchLogsClient)this._client).BeforeRequestEvent += ServiceClientBeforeRequestEvent;
             ((AmazonCloudWatchLogsClient)this._client).ExceptionEvent += ServiceClienExceptionEvent;
@@ -366,6 +377,12 @@ namespace AWS.Logger.Core
 
                     executeFlush = await _flushTriggerEvent.WaitAsync(TimeSpan.FromMilliseconds(_config.MonitorSleepTime.TotalMilliseconds), token);
                 }
+                catch (OperationCanceledException ex) when (!token.IsCancellationRequested)
+                {
+                    // Workaround to handle timeouts of .net httpclient 
+                    // https://github.com/dotnet/corefx/issues/20296
+                    LogLibraryServiceError(ex);
+                }
                 catch (OperationCanceledException ex)
                 {
                     if (!token.IsCancellationRequested || !_repo.IsEmpty || !_pendingMessageQueue.IsEmpty)
@@ -426,21 +443,25 @@ namespace AWS.Logger.Core
         private async Task<string> LogEventTransmissionSetup(CancellationToken token)
         {
             string serviceURL = GetServiceUrl();
-            var logGroupResponse = await _client.DescribeLogGroupsAsync(new DescribeLogGroupsRequest
-            {
-                LogGroupNamePrefix = _config.LogGroup
-            }, token).ConfigureAwait(false);
-            if (!IsSuccessStatusCode(logGroupResponse))
-            {
-                LogLibraryServiceError(new System.Net.WebException($"Lookup LogGroup {_config.LogGroup} returned status: {logGroupResponse.HttpStatusCode}"), serviceURL);
-            }
 
-            if (logGroupResponse.LogGroups.FirstOrDefault(x => string.Equals(x.LogGroupName, _config.LogGroup, StringComparison.Ordinal)) == null)
+            if (!_config.DisableLogGroupCreation)
             {
-                var createGroupResponse = await _client.CreateLogGroupAsync(new CreateLogGroupRequest { LogGroupName = _config.LogGroup }, token).ConfigureAwait(false);
-                if (!IsSuccessStatusCode(createGroupResponse))
+                var logGroupResponse = await _client.DescribeLogGroupsAsync(new DescribeLogGroupsRequest
                 {
-                    LogLibraryServiceError(new System.Net.WebException($"Create LogGroup {_config.LogGroup} returned status: {createGroupResponse.HttpStatusCode}"), serviceURL);
+                    LogGroupNamePrefix = _config.LogGroup
+                }, token).ConfigureAwait(false);
+                if (!IsSuccessStatusCode(logGroupResponse))
+                {
+                    LogLibraryServiceError(new System.Net.WebException($"Lookup LogGroup {_config.LogGroup} returned status: {logGroupResponse.HttpStatusCode}"), serviceURL);
+                }
+
+                if (logGroupResponse.LogGroups.FirstOrDefault(x => string.Equals(x.LogGroupName, _config.LogGroup, StringComparison.Ordinal)) == null)
+                {
+                    var createGroupResponse = await _client.CreateLogGroupAsync(new CreateLogGroupRequest { LogGroupName = _config.LogGroup }, token).ConfigureAwait(false);
+                    if (!IsSuccessStatusCode(createGroupResponse))
+                    {
+                        LogLibraryServiceError(new System.Net.WebException($"Create LogGroup {_config.LogGroup} returned status: {createGroupResponse.HttpStatusCode}"), serviceURL);
+                    }
                 }
             }
 
@@ -625,7 +646,7 @@ namespace AWS.Logger.Core
         private void LogLibraryServiceError(Exception ex, string serviceUrl = null)
         {
             LogLibraryAlert?.Invoke(this, new LogLibraryEventArgs(ex) { ServiceUrl = serviceUrl ?? GetServiceUrl() } );
-            if (!string.IsNullOrEmpty(_config.LibraryLogFileName))
+            if (!string.IsNullOrEmpty(_config.LibraryLogFileName) && _config.LibraryLogErrors)
             {
                 LogLibraryError(ex, _config.LibraryLogFileName);
             }

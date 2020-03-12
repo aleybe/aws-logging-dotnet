@@ -1,0 +1,8 @@
+﻿{
+  "AWS.Logging": {
+    "LogGroup": "AWSILoggerGroup",
+    "DisableLogGroupCreation": true,
+    "Region": "us-west-2",
+    "LogStreamNameSuffix": "TestStream"
+  }
+}

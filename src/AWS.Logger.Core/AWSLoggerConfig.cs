@@ -27,6 +27,15 @@ namespace AWS.Logger
         public string LogGroup { get; set; }
 
         /// <summary>
+        /// Determines whether or not to create a new Log Group, if the one specified by <see cref="LogGroup"/> doesn't already exist
+        /// If false (the default), the Log Group is created if it doesn't already exist. This requires logs:DescribeLogGroups
+        /// permission to determine if the group exists, and logs:CreateLogGroup permission to create the group if it doesn't already exist.
+        /// If true, creation of Log Groups is disabled. Logging functions only if the specified log group already exists.
+        /// When creation of log groups is disabled, logs:DescribeLogGroups permission is NOT required.
+        /// </summary>
+        public bool DisableLogGroupCreation { get; set; }
+
+        /// <summary>
         /// Gets and sets the Profile property. The profile is used to look up AWS credentials in the profile store.
         /// <para>
         /// For understanding how credentials are determine view the top level documentation for AWSLoggerConfig class.
@@ -51,13 +60,18 @@ namespace AWS.Logger
         /// </summary>
         public AWSCredentials Credentials { get; set; }
 
-
         /// <summary>
         /// Gets and sets the Region property. This is the AWS Region that will be used for CloudWatch Logs. If this is not
         /// the AWS SDK for .NET will use its fall back logic to try and determine the region through environment variables and EC2 instance metadata.
         /// If the Region is not set and no region is found by the SDK's fall back logic then an exception will be thrown.
         /// </summary>
         public string Region { get; set; }
+
+        /// <summary>
+        /// Gets and sets of the ServiceURL property. This is an optional property; change
+        /// it only if you want to try a different service endpoint. Ex. for LocalStack
+        /// </summary>
+        public string ServiceUrl { get; set; }
 
         /// <summary>
         /// Gets and sets the BatchPushInterval property. For performance the log messages are sent to AWS in batch sizes. BatchPushInterval 
@@ -147,7 +161,15 @@ namespace AWS.Logger
         public string LogStreamNamePrefix { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets and sets the LibraryLogFileName property. This is the name of the file into which errors from the AWS.Logger.Core library will be wriiten into.
+        /// Gets and sets the LibraryLogErrors property. This is the boolean value of whether or not you would like this library to log logging errors.
+        /// <para>
+        /// The default is "true".
+        /// </para>
+        /// </summary>
+        public bool LibraryLogErrors { get; set; } = true;
+       
+        /// <summary>
+        /// Gets and sets the LibraryLogFileName property. This is the name of the file into which errors from the AWS.Logger.Core library will be written into.
         /// <para>
         /// The default is "aws-logger-errors.txt".
         /// </para>

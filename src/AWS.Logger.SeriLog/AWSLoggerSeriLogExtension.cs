@@ -12,7 +12,9 @@ namespace AWS.Logger.SeriLog
     public static class AWSLoggerSeriLogExtension
     {
         internal const string LOG_GROUP = "Serilog:LogGroup";
+        internal const string DISABLE_LOG_GROUP_CREATION = "Serilog:DisableLogGroupCreation";
         internal const string REGION = "Serilog:Region";
+        internal const string SERVICEURL = "Serilog:ServiceUrl";
         internal const string PROFILE = "Serilog:Profile";
         internal const string PROFILE_LOCATION = "Serilog:ProfilesLocation";
         internal const string BATCH_PUSH_INTERVAL = "Serilog:BatchPushInterval";
@@ -36,9 +38,17 @@ namespace AWS.Logger.SeriLog
             AWSLoggerConfig config = new AWSLoggerConfig();
 
             config.LogGroup = configuration[LOG_GROUP];
+            if (configuration[DISABLE_LOG_GROUP_CREATION] != null)
+            {
+                config.DisableLogGroupCreation = bool.Parse(configuration[DISABLE_LOG_GROUP_CREATION]);
+            }
             if (configuration[REGION] != null)
             {
                 config.Region = configuration[REGION];
+            }
+            if (configuration[SERVICEURL] != null)
+            {
+                config.ServiceUrl = configuration[SERVICEURL];
             }
             if (configuration[PROFILE] != null)
             {

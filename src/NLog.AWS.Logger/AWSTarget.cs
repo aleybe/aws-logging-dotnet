@@ -40,6 +40,16 @@ namespace NLog.AWS.Logger
         }
 
         /// <summary>
+        /// Determines whether or not to create a new Log Group, if the one specified by <see cref="LogGroup"/> doesn't already exist
+        /// <seealso cref="AWSLoggerConfig.DisableLogGroupCreation"/>
+        /// </summary>
+        public bool DisableLogGroupCreation
+        {
+            get { return _config.DisableLogGroupCreation; }
+            set { _config.DisableLogGroupCreation = value; }
+        }
+
+        /// <summary>
         /// Gets and sets the Profile property. The profile is used to look up AWS credentials in the profile store.
         /// <para>
         /// For understanding how credentials are determine view the top level documentation for AWSLoggerConfig class.
@@ -90,6 +100,15 @@ namespace NLog.AWS.Logger
             set { _config.Region = value; }
         }
 
+        /// <summary>
+        /// Gets and sets of the ServiceURL property. This is an optional property; change
+        /// it only if you want to try a different service endpoint. Ex. for LocalStack
+        /// </summary>
+        public string ServiceUrl
+        {
+            get { return _config.ServiceUrl; }
+            set { _config.ServiceUrl = value; }
+        }
 
         /// <summary>
         /// Gets and sets the BatchPushInterval property. For performance the log messages are sent to AWS in batch sizes. BatchPushInterval 
@@ -158,6 +177,18 @@ namespace NLog.AWS.Logger
         }
 
         /// <summary>
+        /// Gets and sets the LibraryLogErrors property. This is the boolean value of whether or not you would like this library to log logging errors.
+        /// <para>
+        /// The default is "true".
+        /// </para>
+        /// </summary>
+        public bool LibraryLogErrors
+        {
+            get { return _config.LibraryLogErrors; }
+            set { _config.LibraryLogErrors = value; }
+        }
+
+        /// <summary>
         /// Gets and sets the LibraryLogFileName property. This is the name of the file into which errors from the AWS.Logger.Core library will be wriiten into.
         /// <para>
         /// The default is "aws-logger-errors.txt".
@@ -180,7 +211,9 @@ namespace NLog.AWS.Logger
 
             var config = new AWSLoggerConfig(RenderSimpleLayout(LogGroup, nameof(LogGroup)))
             {
+                DisableLogGroupCreation = DisableLogGroupCreation,
                 Region = RenderSimpleLayout(Region, nameof(Region)),
+                ServiceUrl = RenderSimpleLayout(ServiceUrl, nameof(ServiceUrl)),
                 Credentials = Credentials,
                 Profile = RenderSimpleLayout(Profile, nameof(Profile)),
                 ProfilesLocation = RenderSimpleLayout(ProfilesLocation, nameof(ProfilesLocation)),
@@ -189,6 +222,7 @@ namespace NLog.AWS.Logger
                 MaxQueuedMessages = MaxQueuedMessages,
                 LogStreamNameSuffix = RenderSimpleLayout(LogStreamNameSuffix, nameof(LogStreamNameSuffix)),
                 LogStreamNamePrefix = RenderSimpleLayout(LogStreamNamePrefix, nameof(LogStreamNamePrefix)),
+                LibraryLogErrors = LibraryLogErrors,
                 LibraryLogFileName = LibraryLogFileName
             };
             _core = new AWSLoggerCore(config, "NLog");
